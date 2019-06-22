@@ -18,7 +18,8 @@ script is capable of the following actions:
 from argparse import ArgumentParser
 import sys
 import hashlib, os
-from os.path import join
+from os import makedirs
+from os.path import join, exists
 import subprocess
 import numpy as np
 import SimpleITK as sitk
@@ -323,6 +324,20 @@ if (__name__ == '__main__'):
     #bspline = BSplinePM()
     #bspline.read_file(args.bspline)
     #bspline.write_file(args.output)
+
+    # create output directories
+    if not exists(args.output):
+        try:
+            makedirs(args.output)
+        except:
+            print("Error:", sys.exc_info()[1])
+            exit()
+    if not exists(join(args.output, 'dicom')):
+        try:
+            makedirs(join(args.output, 'dicom'))
+        except:
+            print("Error:", sys.exc_info()[1])
+            exit()
 
     deformer = DeformImage(read_path=args.input, store_path=args.output, constrain=args.diffeo, number_of_spots=args.numspots, max_displacement=args.maxdispl)
     deformer.read_image()
