@@ -229,16 +229,17 @@ class DeformImage(object):
                  max_displacement=1.0,
                  ):
         super(DeformImage, self).__init__()
-        self.path = read_path
-        self.store_path = store_path
-        self.constrain = constrain
-        self.number_of_spots = number_of_spots
-        self.max_displacement = max_displacement
-        self.plastimatch_executable = 'plastimatch'
+        self.path = read_path           # location of DICOM image
+        self.store_path = store_path    # output location
+        self.constrain = constrain      # diffeomorphic transform?
+        self.number_of_spots = number_of_spots      # number of control points to deform 
+        self.max_displacement = max_displacement    # max displacement in mm
+        self.plastimatch_executable = 'plastimatch' # UPDATE IF NECESSARY
         self.bspline = BSplinePM()
-        self.origin = None
-        self.spacing = None
-        self.dimension = None
+        self.origin = None              # image domain info for building bspline
+        self.spacing = None             #
+        self.dimension = None           #
+        self.image = None               # image for thresholding location
 
     def read_image(self):
         # generate image with plastimatch
