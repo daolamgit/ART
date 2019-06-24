@@ -232,13 +232,13 @@ class DeformImage(object):
         self.path = read_path           # location of DICOM image
         self.store_path = store_path    # output location
         self.constrain = constrain      # diffeomorphic transform?
-        self.number_of_spots = number_of_spots      # number of control points to deform 
+        self.number_of_spots = number_of_spots      # number of control points to deform
         self.max_displacement = max_displacement    # max displacement in mm
         self.plastimatch_executable = 'plastimatch' # UPDATE IF NECESSARY
         self.bspline = BSplinePM()
         self.origin = None              # image domain info for building bspline
-        self.spacing = None             #
-        self.dimension = None           #
+        self.spacing = None             # image domain info for building bspline
+        self.dimension = None           # image domain info for building bspline
         self.image = None               # image for thresholding location
 
     def read_image(self):
@@ -255,10 +255,10 @@ class DeformImage(object):
         subprocess.call(call_params)
 
         # read in image with SimpleITK
-        img = sitk.ReadImage(join(self.store_path,'input.nii'))
-        self.origin = np.asarray(img.GetOrigin())
-        self.spacing = np.asarray(img.GetSpacing())
-        self.dimension = np.asarray(img.GetSize())
+        self.image = sitk.ReadImage(join(self.store_path,'input.nii'))
+        self.origin = np.asarray(self.image.GetOrigin())
+        self.spacing = np.asarray(self.image.GetSpacing())
+        self.dimension = np.asarray(self.image.GetSize())
 
 
     def make_bspline(self, vox_per_rgn=[30,30,30]):
