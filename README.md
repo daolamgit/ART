@@ -16,6 +16,14 @@ art-testing uses plastimatch for the heavy lifting. Please install plastimatch o
 1. Download and install plastimatch by [building from source](http://plastimatch.org/building_plastimatch.html) or by [installing the Windows binary](http://plastimatch.org/windows_installation.html).
 2. If you did not install plastimatch into a standard path, update the variable `plastimatch_executable` in `make_synthetic_image.py`.
 
+### SimpleITK and numpy
+
+art-testing needs SimpleITK and numpy for image manipulation.
+
+SimpleITK can be installed with pip or using a package manager such as [Anaconda](https://www.anaconda.com/distribution/) (I recommend Anaconda). Installation instructions for SimpleITK can be found [here](https://simpleitk.readthedocs.io/en/master/Documentation/docs/source/installation.html).
+
+Numpy can be installed similarly (by default with Anaconda or with pip).
+
 That's it! You're now ready to use the script `make_synthetic_image.py`
 
 ## Usage Instructions
@@ -38,4 +46,4 @@ python make_synthetic_image.py --input /path/to/dicom --output /my/output/direct
 
 The flag `-d` controls whether the deformation is diffeomorphic or not. If this flag is used, then maxdispl flag is ignored and random displacements are selected up to the grid spacing / 2.7. If not used, then synthetic deformations are randomly selected up to the maxdispl value.
 
-The flag `--numspots` controls the number of control points with random deformations. `--gridspacing` controls the bspline grid spacing in x (LR), y (AP), z (SI) directions. 
+The flag `--numspots` controls the number of control points with random deformations. `--gridspacing` controls the bspline grid spacing in x (LR), y (AP), z (SI) directions.
