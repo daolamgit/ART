@@ -12,7 +12,8 @@ script is capable of the following actions:
     (c) Washington University, 2019
     Authors: G. Hugo
     Revision Log:
-    0.1    initial build     6/1/2019
+    0.1    initial build     06/01/2019
+    0.2    remove bones      07/19/2019
 """
 
 from argparse import ArgumentParser
@@ -219,6 +220,7 @@ class DeformImage(object):
         constrain: constrain to a diffeomorphic deformation.
         number_of_spots: number of control points to displace.
         max_displacement: if not constrained, maximum displacement, in mm.
+        remove_bones: try to constrain grid points to <300 HU
     """
 
     def __init__(self,
@@ -227,6 +229,7 @@ class DeformImage(object):
                  constrain=False,
                  number_of_spots=1,
                  max_displacement=1.0,
+                 remove_bones=False
                  ):
         super(DeformImage, self).__init__()
         self.path = read_path           # location of DICOM image
@@ -234,6 +237,7 @@ class DeformImage(object):
         self.constrain = constrain      # diffeomorphic transform?
         self.number_of_spots = number_of_spots      # number of control points to deform
         self.max_displacement = max_displacement    # max displacement in mm
+        self.remove_bones = remove_bones   # no grid points in bones
         self.plastimatch_executable = 'plastimatch' # UPDATE IF NECESSARY
         self.bspline = BSplinePM()
         self.origin = None              # image domain info for building bspline
@@ -273,7 +277,13 @@ class DeformImage(object):
 
         self.bspline.initialize_from_image(self.origin, self.spacing, self.dimension, vox_per_rgn)
         self.bspline.make_coeffs(max_displacement=self.max_displacement, number_of_spots=self.number_of_spots, constrain=self.constrain)
+        if self.remove_bones:
+            self._remove_bones()
         self.bspline.write_file(filename=join(self.store_path,'bspline.txt'))
+
+
+    def remove_bones(self):
+        pass
 
 
     def deform_image(self, vox_per_rgn):
@@ -319,6 +329,7 @@ if (__name__ == '__main__'):
     parser.add_argument('-n', '--numspots', help='Number of gaussian spot displacements', type=int)
     parser.add_argument('-g', '--gridspacing', nargs='+', help='grid spacing in voxels', type=int)
     parser.add_argument('-o', '--output', help='output directory', required=True)
+    parser.add_argument('-s', '--bones', help='try to constrain deformations to soft tissue (unimplemented)', action='store_true')
     args = parser.parse_args()
 
     # testing
@@ -340,7 +351,7 @@ if (__name__ == '__main__'):
             print("Error:", sys.exc_info()[1])
             exit()
 
-    deformer = DeformImage(read_path=args.input, store_path=args.output, constrain=args.diffeo, number_of_spots=args.numspots, max_displacement=args.maxdispl)
+    deformer = DeformImage(read_path=args.input, store_path=args.output, constrain=args.diffeo, number_of_spots=args.numspots, max_displacement=args.maxdispl, remove_bones=args.bones)
     deformer.read_image()
     deformer.deform_image(args.gridspacing)
     deformer.write_image()
