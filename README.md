@@ -28,6 +28,8 @@ That's it! You're now ready to use the script `make_synthetic_image.py`
 
 ## Usage Instructions
 
+### Synthetic Image
+
 The simplest command requires only a path to a set of DICOM image files and an output directory. This will use default parameters for the deformation.
 
 ```
@@ -47,3 +49,11 @@ python make_synthetic_image.py --input /path/to/dicom --output /my/output/direct
 The flag `-d` controls whether the deformation is diffeomorphic or not. If this flag is used, then maxdispl flag is ignored and random displacements are selected up to the grid spacing / 2.7. If not used, then synthetic deformations are randomly selected up to the maxdispl value.
 
 The flag `--numspots` controls the number of control points with random deformations. `--gridspacing` controls the bspline grid spacing in x (LR), y (AP), z (SI) directions.
+
+### Deforming ROIs
+
+To deform ROIs, `plastimatch` can be used to warp the DICOM RS files directly. Just pass the RS (structure set) file, the output path, and the bspline transform file generated above:
+
+```
+plastimatch warp --input RS.dcm --referenced-ct dicom --output-dicom /my/output/directory --xf bspline.txt
+```
