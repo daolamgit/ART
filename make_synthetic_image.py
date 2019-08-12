@@ -28,6 +28,56 @@ import SimpleITK as sitk
 def np_to_str(s, n):
     return s + ' = ' + ' '.join(map(str,n)) + '\n'
 
+class RigidPM(object):
+    """Plastimatch rigid 6 dof file.
+
+    # Arguments
+        rotation: rotation angles, in radians (1x3 tuple)
+        translation: translation, in mm (1x3 tuple)
+    """
+
+    def __init__(self, rotation=(0,0,0), translation=(0,0,0), center_rotation=(0,0,0)):
+        super(RigidPM, self).__init__()
+        if len(rotation) != 3:
+            self.rotation = np.asarray((0,0,0))
+        else:
+            self.rotation = np.asarray(rotation)
+        if len(translation) != 3:
+            self.translation = np.asarray((0,0,0))
+        else:
+            self.translation = np.asarray(translation)
+        if len(center_rotation) != 3:
+            self.center_rotation = np.asarray((0,0,0))
+        else:
+            self.center_rotation = np.asarray(center_rotation)
+
+
+    def set_rotation(self, rotation):
+        self.rotation = np.asarray(rotation)
+
+
+    def set_translation(self, translation):
+        self.translation = np.asarray(translation)
+
+
+    def set_center_rotation(self, center_rotation):
+        self.center_rotation = np.asarray(center_rotation)
+
+
+    def write_file(self, filename):
+        with open(filename, "wb") as f:
+            f.write('#Insight Transform File V1.0\n')
+            f.write('#Transform 0\n')
+            f.write('Transform: VersorRigid3DTransform_double_3_3\n')
+
+            params = np.concatenate((self.rotation, self.translation))
+            param_str = 'Parameters: ' + ' '.join(map(str,params)) + '\n'
+            f.write(param_str)
+
+            fixed_params_str = 'FixedParameters: ' + ' '.join(map(str,self.center_rotation)) + '\n'
+            f.write(fixed_params_str)
+
+
 class BSplinePM(object):
     """Plastimatch bspline file.
 
@@ -115,7 +165,6 @@ class BSplinePM(object):
 
 
     def write_file(self, filename):
-        pass
         with open(filename, "wb") as f:
             f.write('MGH_GPUIT_BSP <experimental>\n')
 
@@ -240,6 +289,7 @@ class DeformImage(object):
         self.remove_bones = remove_bones   # no grid points in bones
         self.plastimatch_executable = 'plastimatch' # UPDATE IF NECESSARY
         self.bspline = BSplinePM()
+        self.rigid = RigidPM()
         self.origin = None              # image domain info for building bspline
         self.spacing = None             # image domain info for building bspline
         self.dimension = None           # image domain info for building bspline
@@ -263,6 +313,14 @@ class DeformImage(object):
         self.origin = np.asarray(self.image.GetOrigin())
         self.spacing = np.asarray(self.image.GetSpacing())
         self.dimension = np.asarray(self.image.GetSize())
+
+
+    def make_rigid(self, translation, rotation, center_rotation=None):
+        self.rigid.set_rotation(rotation)
+        self.rigid.set_translation(translation)
+        if center_rotation:
+            self.rigid.set_center_rotation(center_rotation)
+        self.rigid.write_file(filename=join(self.store_path,'rigid.txt'))
 
 
     def make_bspline(self, vox_per_rgn=[30,30,30]):
@@ -306,6 +364,23 @@ class DeformImage(object):
         subprocess.call(call_params)
 
 
+    def deform_image_rigid(self):
+        # deform image
+        call_params = [self.plastimatch_executable]
+        call_params.append('warp')
+
+        call_params.append('--input')
+        call_params.append(join(self.store_path,'input.nii'))
+
+        call_params.append('--output-img')
+        call_params.append(join(self.store_path,'warped.nii'))
+
+        call_params.append('--xf')
+        call_params.append(join(self.store_path,'rigid.txt'))
+
+        subprocess.call(call_params)
+
+
     def write_image(self):
         call_params = [self.plastimatch_executable]
         call_params.append('convert')
@@ -322,14 +397,16 @@ if (__name__ == '__main__'):
 
     # argument parsing
     parser = ArgumentParser()
-    parser.add_argument('-b', '--bspline',  help='bspline file')
+    #parser.add_argument('-b', '--bspline',  help='bspline file')
     parser.add_argument('-i', '--input', help='path to DICOM input image to be deformed', required=True)
     parser.add_argument('-d', '--diffeomorphic', dest='diffeo', help='Constrain displacement to be diffeomorphic', action='store_true')
     parser.add_argument('-m', '--maxdispl', help='Maximum displacement, in image coordinates', type=float)
     parser.add_argument('-n', '--numspots', help='Number of gaussian spot displacements', type=int)
     parser.add_argument('-g', '--gridspacing', nargs='+', help='grid spacing in voxels', type=int)
+    parser.add_argument('-r', '--rigid', nargs='+', help='rigid transform parameters (3 rotation angles in radians, 3 translation in mm)', type=float)
+    parser.add_argument('-c', '--cor', nargs='+', help='center of rotation (3 coordinates x,y,z)', type=float)
     parser.add_argument('-o', '--output', help='output directory', required=True)
-    parser.add_argument('-s', '--bones', help='try to constrain deformations to soft tissue (unimplemented)', action='store_true')
+    #parser.add_argument('-s', '--bones', help='try to constrain deformations to soft tissue (unimplemented)', action='store_true')
     args = parser.parse_args()
 
     # testing
@@ -351,9 +428,22 @@ if (__name__ == '__main__'):
             print("Error:", sys.exc_info()[1])
             exit()
 
-    deformer = DeformImage(read_path=args.input, store_path=args.output, constrain=args.diffeo, number_of_spots=args.numspots, max_displacement=args.maxdispl, remove_bones=args.bones)
+    deformer = DeformImage(read_path=args.input, store_path=args.output, constrain=args.diffeo, number_of_spots=args.numspots, max_displacement=args.maxdispl)
     deformer.read_image()
-    deformer.deform_image(args.gridspacing)
+    if args.rigid:
+        if len(args.rigid) == 6:
+            print('rotation:', args.rigid[0:3])
+            print('translation: ', args.rigid[3:6])
+            if args.cor and len(args.cor) == 3:
+                deformer.make_rigid(rotation=args.rigid[0:3], translation=args.rigid[3:6], center_rotation=args.cor)
+            else:
+                deformer.make_rigid(rotation=args.rigid[0:3], translation=args.rigid[3:6])
+            deformer.deform_image_rigid()
+        else:
+            print("Error: Rigid parameters must be of length 6 (3 rotation angles, 3 translation)")
+            exit()
+    else:
+        deformer.deform_image(args.gridspacing)
     deformer.write_image()
 
     # plastimatch convert --input CBCT --output-img cbct.nii
