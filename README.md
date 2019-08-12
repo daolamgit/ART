@@ -50,6 +50,12 @@ The flag `-d` controls whether the deformation is diffeomorphic or not. If this 
 
 The flag `--numspots` controls the number of control points with random deformations. `--gridspacing` controls the bspline grid spacing in x (LR), y (AP), z (SI) directions.
 
+#### Rigid only
+
+To apply a rigid shift / rotation only, use the flag `--rigid`. The first 3 parameters are the LR, AP, and SI rotations in radians. The last 3 parameters are the LR, AP, and SI shifts, in mm. To control the point of rotation, use the `--cor` flag. This flag specifies the point (LR, AP, SI) in DICOM coordinates of the center of rotation. 
+
+For example, to rotate about the center of the image, for an image of dimension (200, 200, 100), with spacing (1, 1, 3) mm, and origin (-100, -400, 50), one can use the formula: center = (dimension * spacing)/2 + origin, so the cor parameter would be (0, -300, 200). 
+
 ### Deforming ROIs
 
 To deform ROIs, `plastimatch` can be used to warp the DICOM RS files directly. Just pass the RS (structure set) file, the output path, and the bspline transform file generated above:
