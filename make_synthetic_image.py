@@ -36,7 +36,7 @@ class RigidPM(object):
         translation: translation, in mm (1x3 tuple)
     """
 
-    def __init__(self, rotation=(0,0,0), translation=(0,0,0)):
+    def __init__(self, rotation=(0,0,0), translation=(0,0,0), center_rotation=(0,0,0)):
         super(RigidPM, self).__init__()
         if len(rotation) != 3:
             self.rotation = np.asarray((0,0,0))
@@ -46,6 +46,10 @@ class RigidPM(object):
             self.translation = np.asarray((0,0,0))
         else:
             self.translation = np.asarray(translation)
+        if len(center_rotation) != 3:
+            self.center_rotation = np.asarray((0,0,0))
+        else:
+            self.center_rotation = np.asarray(center_rotation)
 
 
     def set_rotation(self, rotation):
@@ -56,15 +60,22 @@ class RigidPM(object):
         self.translation = np.asarray(translation)
 
 
+    def set_center_rotation(self, center_rotation):
+        self.center_rotation = np.asarray(center_rotation)
+
+
     def write_file(self, filename):
         with open(filename, "wb") as f:
             f.write('#Insight Transform File V1.0\n')
             f.write('#Transform 0\n')
             f.write('Transform: VersorRigid3DTransform_double_3_3\n')
+
             params = np.concatenate((self.rotation, self.translation))
-            param_str = 'Parameters:' + ' '.join(map(str,params)) + '\n'
+            param_str = 'Parameters: ' + ' '.join(map(str,params)) + '\n'
             f.write(param_str)
-            f.write('FixedParameters: 0 0 0\n')
+
+            fixed_params_str = 'FixedParameters: ' + ' '.join(map(str,self.center_rotation)) + '\n'
+            f.write(fixed_params_str)
 
 
 class BSplinePM(object):
@@ -304,9 +315,11 @@ class DeformImage(object):
         self.dimension = np.asarray(self.image.GetSize())
 
 
-    def make_rigid(self, translation, rotation):
+    def make_rigid(self, translation, rotation, center_rotation=None):
         self.rigid.set_rotation(rotation)
         self.rigid.set_translation(translation)
+        if center_rotation:
+            self.rigid.set_center_rotation(center_rotation)
         self.rigid.write_file(filename=join(self.store_path,'rigid.txt'))
 
 
@@ -391,6 +404,7 @@ if (__name__ == '__main__'):
     parser.add_argument('-n', '--numspots', help='Number of gaussian spot displacements', type=int)
     parser.add_argument('-g', '--gridspacing', nargs='+', help='grid spacing in voxels', type=int)
     parser.add_argument('-r', '--rigid', nargs='+', help='rigid transform parameters (3 rotation angles in radians, 3 translation in mm)', type=float)
+    parser.add_argument('-c', '--cor', nargs='+', help='center of rotation (3 coordinates x,y,z)', type=float)
     parser.add_argument('-o', '--output', help='output directory', required=True)
     #parser.add_argument('-s', '--bones', help='try to constrain deformations to soft tissue (unimplemented)', action='store_true')
     args = parser.parse_args()
@@ -420,7 +434,10 @@ if (__name__ == '__main__'):
         if len(args.rigid) == 6:
             print('rotation:', args.rigid[0:3])
             print('translation: ', args.rigid[3:6])
-            deformer.make_rigid(rotation=args.rigid[0:3], translation=args.rigid[3:6])
+            if args.cor and len(args.cor) == 3:
+                deformer.make_rigid(rotation=args.rigid[0:3], translation=args.rigid[3:6], center_rotation=args.cor)
+            else:
+                deformer.make_rigid(rotation=args.rigid[0:3], translation=args.rigid[3:6])
             deformer.deform_image_rigid()
         else:
             print("Error: Rigid parameters must be of length 6 (3 rotation angles, 3 translation)")
