@@ -378,6 +378,8 @@ class DeformImage(object):
         call_params.append('--xf')
         call_params.append(join(self.store_path,'rigid.txt'))
 
+        call_params.append('--default-value -1000') # assume air
+
         subprocess.call(call_params)
 
 
