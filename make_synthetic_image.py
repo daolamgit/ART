@@ -13,7 +13,7 @@ script is capable of the following actions:
     Authors: G. Hugo
     Revision Log:
     0.1    initial build     06/01/2019
-    0.2    remove bones      07/19/2019
+    0.2    remove bones      08/13/2019
 """
 
 from argparse import ArgumentParser
@@ -236,25 +236,87 @@ class BSplinePM(object):
         self._setup()
 
 
-    def make_coeffs(self, max_displacement=1.0, number_of_spots=1, constrain=False):
+    def _region_from_cp_index(self, idx):
+        # returns a tuple of indices (start_x, start_y, start_z, end_x, end_y, end_z) defining the influence region for control point at index idx
+        st = [0,0,0]
+        en = [0,0,0]
+        for i in range(3):
+            # CP in image run from 0 to N-3, due to support needed outside of image
+            # but really care about tiles 1 and 2 (out of (0,1,2,3)), so exclude first and last tiles
+            st[i] = (idx[i] + 1) * self.vox_per_rgn[i]
+            # Each CP covers 4 knot points, but only care about middle 2
+            en[i] = (idx[i] + 3) * self.vox_per_rgn[i]
+        return st + en
+
+
+    def _histogram_from_image_region(self, region, image, low_threshold=300, high_threshold=700):
+        # returns the histogram of the self.image within region
+
+        # only need 3 bins, air, soft tissue, and bone
+        bins = [-1050, low_threshold, high_threshold, 5000]
+
+        # extract region
+        image = image[region[2]:region[5], region[1]:region[4], region[0]:region[3]]
+
+        # histogram of 3 bins
+        h, bins = np.histogram(image, bins, density=False)
+
+        return h
+
+
+    def _is_good_grid_point_location(self, idx, image, low_threshold=300, high_threshold=700, percentage_threshold=90.0):
+        # use a histogram to determine if the region influenced by the grid point contains enough soft tissue
+
+        # compute histogram in grid point influence region
+        region = self._region_from_cp_index(idx)
+        h = self._histogram_from_image_region(region, image, low_threshold, high_threshold)
+        if len(h) != 3:
+            print('Error: histogram of wrong size: ', h)
+            exit()
+        return h[1] > percentage_threshold
+
+
+    def make_coeffs(self, max_displacement=1.0, number_of_spots=1, constrain=False, remove_bones=False, image=None):
         # select random displacement (single voxel) and location based on spacing
         # displacement can be no bigger than gridSize / 2.479 (Choi and Lee).
         if(constrain):
             K=2.479
+            displacement_cap = self.grid_spacing / K
         else:
-            K=max_displacement
-
-        displacement_cap = self.grid_spacing / K
+            displacement_cap = max_displacement
 
         self.coeffs = np.zeros((3, self.number_of_control_points[2], self.number_of_control_points[1], self.number_of_control_points[0]))
 
+        count = 0
+        if image is not None:
+            image = sitk.GetArrayFromImage(image)
         for spot in range(number_of_spots):
             rand_displ = (2*displacement_cap) * np.random.random(3) + -displacement_cap
             rand_idx = [0,0,0]
-            for idx in range(3):
-                rand_idx[idx] = np.random.randint(low=0, high=self.number_of_control_points[idx])
+
+            if remove_bones:
+                # limit grid point to locations with soft tissue (HU -700 to 700)
+                found_soft_tissue_location = False
+                while not found_soft_tissue_location:
+                    for idx in range(3):
+                        # CP in image run from 0 to N-3, due to support needed outside of image
+                        rand_idx[idx] = np.random.randint(low=0, high=self.number_of_control_points[idx]-3)
+                    count += 1
+                    if self._is_good_grid_point_location(rand_idx, image):
+                        found_soft_tissue_location = True
+                        print('found good point: ', rand_idx, ' with displacement: ', rand_displ)
+                    else:
+                        print('point not within soft tissue, retrying...')
+            else:
+                # allow grid points anywhere
+                for idx in range(3):
+                    # CP in image run from 0 to N-3, due to support needed outside of image
+                    rand_idx[idx] = np.random.randint(low=0, high=self.number_of_control_points[idx]-3)
+                count += 1
             for idx in range(3):
                 self.coeffs[idx, rand_idx[2], rand_idx[1], rand_idx[0]] = rand_displ[idx]
+
+        print('Sampled ', count, ' points to obtain ', number_of_spots, ' grid points')
 
 
 class DeformImage(object):
@@ -334,14 +396,8 @@ class DeformImage(object):
             vox_per_rgn = np.asarray(vox_per_rgn)
 
         self.bspline.initialize_from_image(self.origin, self.spacing, self.dimension, vox_per_rgn)
-        self.bspline.make_coeffs(max_displacement=self.max_displacement, number_of_spots=self.number_of_spots, constrain=self.constrain)
-        if self.remove_bones:
-            self._remove_bones()
+        self.bspline.make_coeffs(max_displacement=self.max_displacement, number_of_spots=self.number_of_spots, constrain=self.constrain, remove_bones=self.remove_bones, image=self.image)
         self.bspline.write_file(filename=join(self.store_path,'bspline.txt'))
-
-
-    def remove_bones(self):
-        pass
 
 
     def deform_image(self, vox_per_rgn):
@@ -396,6 +452,7 @@ class DeformImage(object):
 
         subprocess.call(call_params)
 
+
 if (__name__ == '__main__'):
 
     # argument parsing
@@ -409,7 +466,7 @@ if (__name__ == '__main__'):
     parser.add_argument('-r', '--rigid', nargs='+', help='rigid transform parameters (3 rotation angles in radians, 3 translation in mm)', type=float)
     parser.add_argument('-c', '--cor', nargs='+', help='center of rotation (3 coordinates x,y,z)', type=float)
     parser.add_argument('-o', '--output', help='output directory', required=True)
-    #parser.add_argument('-s', '--bones', help='try to constrain deformations to soft tissue (unimplemented)', action='store_true')
+    parser.add_argument('-s', '--bones', help='try to constrain deformations to soft tissue', action='store_true')
     args = parser.parse_args()
 
     # testing
@@ -431,7 +488,7 @@ if (__name__ == '__main__'):
             print("Error:", sys.exc_info()[1])
             exit()
 
-    deformer = DeformImage(read_path=args.input, store_path=args.output, constrain=args.diffeo, number_of_spots=args.numspots, max_displacement=args.maxdispl)
+    deformer = DeformImage(read_path=args.input, store_path=args.output, constrain=args.diffeo, number_of_spots=args.numspots, max_displacement=args.maxdispl, remove_bones=args.bones)
     deformer.read_image()
     if args.rigid:
         if len(args.rigid) == 6:
