@@ -153,10 +153,10 @@ class BSplinePM(object):
             self.grid_spacing = np.multiply(self.vox_per_rgn, self.spacing)
 
         if self.roi_dim is not None and self.vox_per_rgn is not None:
-            self.number_of_regions = 1 + (self.roi_dim - 1) / self.vox_per_rgn
+            self.number_of_regions = 1 + (self.roi_dim.astype(int) - 1) / self.vox_per_rgn.astype(int)
 
         if self.number_of_regions.any() > 0:
-            self.number_of_control_points = 3 + self.number_of_regions
+            self.number_of_control_points = 3 + self.number_of_regions.astype(int)
 
         if coeffs is not None:
             self.coeffs = np.asarray(coeffs)
@@ -165,7 +165,7 @@ class BSplinePM(object):
 
 
     def write_file(self, filename):
-        with open(filename, "wb") as f:
+        with open(filename, "w") as f:
             f.write('MGH_GPUIT_BSP <experimental>\n')
 
             f.write(np_to_str('img_origin', self.origin))
