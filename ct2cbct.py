@@ -360,9 +360,6 @@ def find_mid_slice_z( contours = None, iso_center_name = 'PREVIEW'):
 
 
 if __name__ == '__main__':
-    ct_path = '/home/radonc/Projects/Halcyon/Data/pancrease_iso/Neo0819pan003/CT/Deformed_Rigid'
-    cbct_path = '/home/radonc/Projects/Halcyon/Data/pancrease_iso/Neo0819pan003/CBCT/Fx2_TF'
-    output_path = '/home/radonc/Projects/Halcyon/Data/pancrease_iso/Neo0819pan003/CBCT/Deformed_Rigid'
 
     parser = ArgumentParser()
     parser.add_argument( '-c','--ct', help='input CT folder')

@@ -10,12 +10,6 @@ from skimage.draw import polygon
 
 import matplotlib.pyplot as plt
 
-#simple first
-#Read contour data to contours
-#distort some contour in contours
-#write contours in to rs
-
-#complicate later
 
 rs_path = '../Data/CIRS/RS.1.2.246.352.205.5027836166574254264.11682058419526807215.dcm'
 new_rs_path = '../Data/CIRS/RS_new.dcm'
@@ -100,7 +94,6 @@ def translate( contour, x, y, z = 0):
 
 def zoom( contour, z):
     '''
-    This piece of code amazes me how it works
     :param contour:
     :param z: zoom factor
     :return:
