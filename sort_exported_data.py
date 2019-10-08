@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 
 def read_data_slice_only(ct_loc):
     dcms = glob.glob(join(pt_loc, ct_loc, 'CT*'))
-    print(len(dcms))
+    if len( dcms) < 10:
+        print('No CT found!')
+        exit(0)
     slices = [dicom.dcmread(dcm) for dcm in dcms if not dcm.endswith('xml')]
     slices.sort(key=lambda x: (x.Rows))
     return slices
@@ -38,7 +40,7 @@ def sorted_ct_images(slices):
     '''
     Input: one CT
     :param slices:
-    :return: sorted CT and iamges
+    :return: sorted CT and images, and SOPUIDs, which is also the same as filename
     '''
     slices.sort(key=lambda x: float(x.ImagePositionPatient[2]))
     images = np.stack(s.pixel_array * slices[0].RescaleSlope + slices[0].RescaleIntercept for s in slices)
