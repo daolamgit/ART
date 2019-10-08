@@ -44,8 +44,9 @@ def find_image_location(patients_folder, patient, prefix = 'CT', subfolders = No
             return image_location
 
     else:
-        print("There is no CT images")
-        exit( 1)
+        # print("There is no CT images for ", patient)
+        return None
+
 
 def find_structure_location( patients_folder, patient, prefix = 'RS', subfolders = None):
     '''
@@ -66,5 +67,5 @@ def find_structure_location( patients_folder, patient, prefix = 'RS', subfolders
             return dcms[0]
 
     else:
-        print( 'There is no Structure file')
+        # print( 'There is no Structure file')
         return None
