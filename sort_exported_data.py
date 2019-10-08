@@ -68,31 +68,7 @@ for i in range( len( rts)):
     for k in range( len( Sopuids)):
         if rs.ROIContourSequence[0].ContourSequence[0].ContourImageSequence[0].ReferencedSOPInstanceUID in Sopuids[k]:
             print(rts[i], ' belongs to CT ', k)
+            #Start copy this RS and CT in Sopuids to new folder
+            
             break
 
-################### for CT processing ###############################
-# Slices = read_data_slice_only(ct_loc)
-# Slices = sorted_mixed_ct( Slices)
-#
-# Images = [[] for i in range( len( Slices))]
-# for k in range( len( Slices)):
-#     Slices[k], Images[k] = sorted_ct_images( Slices[k])
-#
-# ### plot them out
-# plt.figure()
-# for i in range(80, 150, 10):
-#     for k in range( len( Images)):
-#         plt.subplot( 1,3,k+1)
-#         plt.imshow( Images[k][i])
-#
-#     plt.pause(3)
-#     # plt.close()
-
-################## for RS processing #################################
-
-# rtst = glob.glob( join( pt_loc, ct_loc, 'RTST*'))
-#
-# rs = dicom.dcmread( rtst[0])
-# print( rs.StudyInstanceUID)
-#
-# rs.ROIContourSequence[0].ContourSequence[0].ContourImageSequence[0].ReferencedSOPInstanceUID
