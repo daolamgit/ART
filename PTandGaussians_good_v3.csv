@@ -1,0 +1,5 @@
+"PT"	"PT_id"	"PT_path"	"Site"	"Fx"	"nGaussian"	"Center"	"Magnitude"	"Std"	"Note"
+"PT1"	"AD091920191"	"/home/radonc/Projects/Halcyon/Data/Emulator/NeoProst002"	"Prostate"	1	1	".0  100  225.5"	"3 20 3"	"10 20 10"	"Prostate 2 Bladder"
+"PT1"	"AD091920191"	"/home/radonc/Projects/Halcyon/Data/Emulator/NeoProst002"	"Prostate"	2	1	"-3  113  234.5"	"3 -20 3"	"10 20 10"	"Prostate 2 Rectum"
+"PT1"	"AD091920191"	"/home/radonc/Projects/Halcyon/Data/Emulator/NeoProst002"	"Prostate"	3	1	".0  100  225.5"	"3 20 3"	"10 20 10"	"Prostate 2 Bladder"
+"PT1"	"AD091920191"	"/home/radonc/Projects/Halcyon/Data/Emulator/NeoProst002"	"Prostate"	3	2	"-3  113  234.5"	"3 -20 3"	"10 20 10"	"Prostate 2 Rectum"
