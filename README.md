@@ -31,6 +31,7 @@ That's it! You're now ready to use the script `make_synthetic_image.py`
 ### Input and Output
 
 Input CT images, CBCT images and structure file must follow the following structure:
+<pre>
 #   #   #   #   #   #   #   #   #   #   #
 # Input:
 #   Pt1
@@ -74,7 +75,7 @@ Input CT images, CBCT images and structure file must follow the following struct
 #           -CBCT
 #             -CBCT.dcms
 #             -RS??? No need
-
+</pre>
 The Gaussian information needed for the deformation can be entered in a .csv file. An example is given in Gaussian.csv.
 Note about the Gaussian information:
 - center: x y z in mm. It follows plastimatch coordinate
